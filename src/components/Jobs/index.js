@@ -19,6 +19,13 @@ const salaryRangesList = [
   {salaryRangeId: '3000000', label: '30 LPA and above'},
   {salaryRangeId: '4000000', label: '40 LPA and above'},
 ]
+const locationsList = [
+  {locationId: 'Hyderabad', label: 'Hyderabad'},
+  {locationId: 'Bangalore', label: 'Bangalore'},
+  {locationId: 'Chennai', label: 'Chennai'},
+  {locationId: 'Delhi', label: 'Delhi'},
+  {locationId: 'Mumbai', label: 'Mumbai'},
+]
 
 const apiStatusConstants = {
   initial: 'INITIAL',
@@ -40,7 +47,7 @@ const Jobs = () => {
   const [minimumPackage, setMinimumPackage] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [activeSearchInput, setActiveSearchInput] = useState('')
-
+  const [locations, setLocations] = useState([])
   const getProfileDetails = useCallback(async () => {
     setProfileApiStatus(apiStatusConstants.inProgress)
     const jwtToken = Cookies.get('jwt_token')
@@ -70,6 +77,7 @@ const Jobs = () => {
     setJobsApiStatus(apiStatusConstants.inProgress)
     const jwtToken = Cookies.get('jwt_token')
     const employmentTypeParam = employmentType.join(',')
+    const locationParam = locations.join(',')
     const url = `https://apis.ccbp.in/jobs?employment_type=${employmentTypeParam}&minimum_package=${minimumPackage}&search=${activeSearchInput}`
     const options = {
       headers: {
@@ -80,7 +88,7 @@ const Jobs = () => {
     const response = await fetch(url, options)
     if (response.ok === true) {
       const data = await response.json()
-      const updatedJobsList = data.jobs.map(job => ({
+      let updatedJobsList = data.jobs.map(job => ({
         companyLogoUrl: job.company_logo_url,
         employmentType: job.employment_type,
         id: job.id,
@@ -90,12 +98,17 @@ const Jobs = () => {
         rating: job.rating,
         title: job.title,
       }))
+      if (locations.length > 0) {
+        updatedJobsList = updatedJobsList.filter(job =>
+          locations.includes(job.location),
+        )
+      }
       setJobsList(updatedJobsList)
       setJobsApiStatus(apiStatusConstants.success)
     } else {
       setJobsApiStatus(apiStatusConstants.failure)
     }
-  }, [employmentType, minimumPackage, activeSearchInput])
+  }, [employmentType, minimumPackage, activeSearchInput, locations])
 
   useEffect(() => {
     getProfileDetails()
@@ -132,10 +145,18 @@ const Jobs = () => {
   const onChangeSalaryRange = event => {
     setMinimumPackage(event.target.value)
   }
+  const onChangeLocation = event => {
+    const {value, checked} = event.target
+    if (checked) {
+      setLocations(prevState => [...prevState, value])
+    } else {
+      setLocations(prevState => prevState.filter(each => each !== value))
+    }
+  }
 
   const renderLoader = () => (
-    <div className="loader-container" data-testid="loader">
-      <Loader type="ThreeDots" color="#ffffff" height={50} width={50} />
+    <div className='loader-container' data-testid='loader'>
+      <Loader type='ThreeDots' color='#ffffff' height={50} width={50} />
     </div>
   )
 
@@ -143,24 +164,24 @@ const Jobs = () => {
     switch (profileApiStatus) {
       case apiStatusConstants.success:
         return (
-          <div className="profile-container">
+          <div className='profile-container'>
             <img
               src={profileData.profileImageUrl}
-              alt="profile"
-              className="profile-image"
+              alt='profile'
+              className='profile-image'
             />
-            <h1 className="profile-name">{profileData.name}</h1>
-            <p className="profile-bio">{profileData.shortBio}</p>
+            <h1 className='profile-name'>{profileData.name}</h1>
+            <p className='profile-bio'>{profileData.shortBio}</p>
           </div>
         )
       case apiStatusConstants.inProgress:
         return renderLoader()
       case apiStatusConstants.failure:
         return (
-          <div className="profile-failure-container">
+          <div className='profile-failure-container'>
             <button
-              type="button"
-              className="profile-retry-button"
+              type='button'
+              className='profile-retry-button'
               onClick={getProfileDetails}
             >
               Retry
@@ -175,21 +196,21 @@ const Jobs = () => {
   const renderJobsList = () => {
     if (jobsList.length === 0) {
       return (
-        <div className="no-jobs-container">
+        <div className='no-jobs-container'>
           <img
-            src="https://assets.ccbp.in/frontend/react-js/no-jobs-img.png"
-            alt="no jobs"
-            className="no-jobs-image"
+            src='https://assets.ccbp.in/frontend/react-js/no-jobs-img.png'
+            alt='no jobs'
+            className='no-jobs-image'
           />
-          <h1 className="no-jobs-heading">No Jobs Found</h1>
-          <p className="no-jobs-description">
+          <h1 className='no-jobs-heading'>No Jobs Found</h1>
+          <p className='no-jobs-description'>
             We could not find any jobs. Try other filters
           </p>
         </div>
       )
     }
     return (
-      <ul className="jobs-list">
+      <ul className='jobs-list'>
         {jobsList.map(job => (
           <JobCard key={job.id} jobDetails={job} />
         ))}
@@ -198,17 +219,17 @@ const Jobs = () => {
   }
 
   const renderJobsFailureView = () => (
-    <div className="jobs-failure-container">
+    <div className='jobs-failure-container'>
       <img
-        src="https://assets.ccbp.in/frontend/react-js/failure-img.png"
-        alt="failure view"
-        className="failure-image"
+        src='https://assets.ccbp.in/frontend/react-js/failure-img.png'
+        alt='failure view'
+        className='failure-image'
       />
-      <h1 className="failure-heading">Oops! Something Went Wrong</h1>
-      <p className="failure-description">
+      <h1 className='failure-heading'>Oops! Something Went Wrong</h1>
+      <p className='failure-description'>
         We cannot seem to find the page you are looking for
       </p>
-      <button type="button" className="jobs-retry-button" onClick={getJobsList}>
+      <button type='button' className='jobs-retry-button' onClick={getJobsList}>
         Retry
       </button>
     </div>
@@ -230,25 +251,25 @@ const Jobs = () => {
   return (
     <>
       <Header />
-      <div className="jobs-bg-container">
-        <div className="filters-section">
+      <div className='jobs-bg-container'>
+        <div className='filters-section'>
           {renderProfile()}
-          <hr className="separator" />
-          <div className="filter-group">
-            <h1 className="filter-heading">Type of Employment</h1>
-            <ul className="filter-list">
+          <hr className='separator' />
+          <div className='filter-group'>
+            <h1 className='filter-heading'>Type of Employment</h1>
+            <ul className='filter-list'>
               {employmentTypesList.map(each => (
-                <li className="filter-item" key={each.employmentTypeId}>
+                <li className='filter-item' key={each.employmentTypeId}>
                   <input
-                    type="checkbox"
+                    type='checkbox'
                     id={each.employmentTypeId}
                     value={each.employmentTypeId}
                     onChange={onChangeEmploymentType}
-                    className="checkbox-input"
+                    className='checkbox-input'
                   />
                   <label
                     htmlFor={each.employmentTypeId}
-                    className="filter-label"
+                    className='filter-label'
                   >
                     {each.label}
                   </label>
@@ -256,21 +277,41 @@ const Jobs = () => {
               ))}
             </ul>
           </div>
-          <hr className="separator" />
-          <div className="filter-group">
-            <h1 className="filter-heading">Salary Range</h1>
-            <ul className="filter-list">
+          <hr className='separator' />
+          <div className='filter-group'>
+            <h1 className='filter-heading'>Salary Range</h1>
+            <ul className='filter-list'>
               {salaryRangesList.map(each => (
-                <li className="filter-item" key={each.salaryRangeId}>
+                <li className='filter-item' key={each.salaryRangeId}>
                   <input
-                    type="radio"
+                    type='radio'
                     id={each.salaryRangeId}
-                    name="salaryRange"
+                    name='salaryRange'
                     value={each.salaryRangeId}
                     onChange={onChangeSalaryRange}
-                    className="radio-input"
+                    className='radio-input'
                   />
-                  <label htmlFor={each.salaryRangeId} className="filter-label">
+                  <label htmlFor={each.salaryRangeId} className='filter-label'>
+                    {each.label}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <hr className='separator' />
+          <div className='filter-group'>
+            <h1 className='filter-heading'>Location</h1>
+            <ul className='filter-list'>
+              {locationsList.map(each => (
+                <li key={each.locationId} className='filter-item'>
+                  <input
+                    type='checkbox'
+                    id={each.locationId}
+                    value={each.locationId}
+                    onChange={onChangeLocation}
+                    className='checkbox-input'
+                  />
+                  <label htmlFor={each.locationId} className='filter-label'>
                     {each.label}
                   </label>
                 </li>
@@ -278,23 +319,23 @@ const Jobs = () => {
             </ul>
           </div>
         </div>
-        <div className="jobs-section">
-          <div className="search-container">
+        <div className='jobs-section'>
+          <div className='search-container'>
             <input
-              type="search"
-              placeholder="Search"
-              className="search-input"
+              type='search'
+              placeholder='Search'
+              className='search-input'
               value={searchInput}
               onChange={onChangeSearchInput}
               onKeyDown={onKeyDownSearch}
             />
             <button
-              type="button"
-              data-testid="searchButton"
-              className="search-button"
+              type='button'
+              data-testid='searchButton'
+              className='search-button'
               onClick={onClickSearch}
             >
-              <BsSearch className="search-icon" />
+              <BsSearch className='search-icon' />
             </button>
           </div>
           {renderJobsSection()}
